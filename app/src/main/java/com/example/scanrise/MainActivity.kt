@@ -26,8 +26,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.example.scanrise.data.ScanRiseDatabase
+import com.example.scanrise.data.ScanObjectEntity
 
 class MainActivity : ComponentActivity() {
 
@@ -36,50 +46,80 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        val database = ScanRiseDatabase.getDatabase(applicationContext)
+        val scanObjectDao = database.scanObjectDao()
         setContent {
             ScanRiseTheme {
+
+                val objects by scanObjectDao
+                    .getAll()
+                    .collectAsState(initial = emptyList())
+
+                val scope = rememberCoroutineScope()
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
 
-                    val context = LocalContext.current
-
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(innerPadding),
-                        contentAlignment = Alignment.Center
+                            .padding(innerPadding)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
+
+                        Text(
+                            text = "Objects in Room: ${objects.size}"
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(16.dp)
+                        )
+
+                        objects.forEach { scanObject ->
+                            Text(
+                                text = "${scanObject.emoji} ${scanObject.name} — ${scanObject.barcodeValue}"
+                            )
+                        }
+
+                        Spacer(
+                            modifier = Modifier.height(24.dp)
+                        )
+
                         Button(
                             onClick = {
-                                if (canScheduleExactAlarm(context)) {
-
-                                    Toast.makeText(
-                                        context,
-                                        "Exact alarm permission: YES",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    scheduleTestAlarm(context)
-
-                                } else {
-
-                                    Toast.makeText(
-                                        context,
-                                        "Exact alarm permission: NO",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    requestExactAlarmPermission(context)
+                                scope.launch {
+                                    scanObjectDao.insert(
+                                        ScanObjectEntity(
+                                            name = "Test Notebook",
+                                            emoji = "📓",
+                                            barcodeValue = "882709993490",
+                                            barcodeFormat = 0
+                                        )
+                                    )
                                 }
                             }
                         ) {
-                            Text("TEST ALARM IN 60 SECONDS")
+                            Text("INSERT TEST OBJECT")
+                        }
+
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    scanObjectDao.deleteAll()
+                                }
+                            }
+                        ) {
+                            Text("DELETE ALL TEST OBJECTS")
                         }
                     }
                 }
             }
         }
+
+
     }
 }
 

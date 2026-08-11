@@ -52,8 +52,13 @@ class AlarmActivity : ComponentActivity() {
                         onBarcodeScanned = { barcode ->
 
                             scannedBarcode = barcode
-                            showScanner = false
 
+                            if (barcode == "882709993490") {
+                                stopAlarm()
+                                finish()
+                            } else {
+                                showScanner = false
+                            }
                         }
                     )
 
