@@ -24,8 +24,7 @@ import java.util.concurrent.Executors
 @Composable
 fun BarcodeScannerView(
     modifier: Modifier = Modifier,
-    onBarcodeScanned: (String) -> Unit
-) {
+    onBarcodeScanned: (String, Int) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -97,8 +96,8 @@ fun BarcodeScannerView(
                                     !it.rawValue.isNullOrBlank()
                                 }
 
-                            barcode?.rawValue?.let {
-                                onBarcodeScanned(it)
+                            barcode?.rawValue?.let { value ->
+                                onBarcodeScanned(value, barcode.format)
                             }
                         }
                         .addOnCompleteListener {

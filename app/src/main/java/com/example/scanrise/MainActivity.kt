@@ -31,23 +31,82 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.scanrise.data.ScanRiseDatabase
 import com.example.scanrise.data.ScanObjectEntity
 
+import com.example.scanrise.data.AlarmEntity
+import com.example.scanrise.ui.alarms.AlarmsListScreen
+import com.example.scanrise.ui.alarms.CreateAlarmScreen
+import com.example.scanrise.ui.objects.ObjectDetailsScreen
+import com.example.scanrise.ui.objects.ObjectsListScreen
+
+enum class AppScreen {
+    ALARMS,
+    OBJECTS,
+    OBJECT_SCANNER,
+    OBJECT_DETAILS,
+    CREATE_ALARM
+}
+
 class MainActivity : ComponentActivity() {
 
+    private var onCameraPermissionGranted: (() -> Unit)? = null
+
+    private val requestCameraPermission =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
+
+            if (granted) {
+                onCameraPermissionGranted?.invoke()
+            }
+
+            onCameraPermissionGranted = null
+        }
+
+    private fun requestCameraAccess(
+        onGranted: () -> Unit
+    ) {
+        if (
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            onGranted()
+        } else {
+            onCameraPermissionGranted = onGranted
+
+            requestCameraPermission.launch(
+                Manifest.permission.CAMERA
+            )
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
 
         val database = ScanRiseDatabase.getDatabase(applicationContext)
         val scanObjectDao = database.scanObjectDao()
+        val alarmDao = database.alarmDao()
+
+
+
         setContent {
             ScanRiseTheme {
 
@@ -55,65 +114,357 @@ class MainActivity : ComponentActivity() {
                     .getAll()
                     .collectAsState(initial = emptyList())
 
+                val alarms by alarmDao.getAllWithObjects().collectAsState(initial = emptyList())
+
+                var currentScreen by remember {
+                    mutableStateOf(AppScreen.ALARMS)
+                }
+
+                var scannedBarcode by remember {
+                    mutableStateOf<String?>(null)
+                }
+
+                var scannedBarcodeFormat by remember {
+                    mutableIntStateOf(0)
+                }
+
+                var objectName by remember {
+                    mutableStateOf("")
+                }
+
+                var objectEmoji by remember {
+                    mutableStateOf("")
+                }
+
+                var errorMessage by remember {
+                    mutableStateOf<String?>(null)
+                }
+
+                var alarmHour by remember {
+                    mutableIntStateOf(7)
+                }
+
+                var alarmMinute by remember {
+                    mutableIntStateOf(0)
+                }
+
+                var alarmLabel by remember {
+                    mutableStateOf("")
+                }
+
+                var alarmRepeatDays by remember {
+                    mutableIntStateOf(0)
+                }
+
+                var selectedObjectIds by remember {
+                    mutableStateOf<Set<Long>>(
+                        emptySet()
+                    )
+                }
+
+                fun resetAlarmForm() {
+
+                    alarmHour = 7
+                    alarmMinute = 0
+                    alarmLabel = ""
+                    alarmRepeatDays = 0
+                    selectedObjectIds = emptySet()
+                }
+
                 val scope = rememberCoroutineScope()
 
                 Scaffold(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+
+                    bottomBar = {
+
+                        if (
+                            currentScreen == AppScreen.ALARMS ||
+                            currentScreen == AppScreen.OBJECTS
+                        ) {
+
+                            NavigationBar {
+
+                                NavigationBarItem(
+                                    selected =
+                                        currentScreen ==
+                                                AppScreen.ALARMS,
+
+                                    onClick = {
+                                        currentScreen =
+                                            AppScreen.ALARMS
+                                    },
+
+                                    icon = {
+                                        Text("⏰")
+                                    },
+
+                                    label = {
+                                        Text("Alarms")
+                                    }
+                                )
+
+                                NavigationBarItem(
+                                    selected =
+                                        currentScreen ==
+                                                AppScreen.OBJECTS,
+
+                                    onClick = {
+                                        currentScreen =
+                                            AppScreen.OBJECTS
+                                    },
+
+                                    icon = {
+                                        Text("📦")
+                                    },
+
+                                    label = {
+                                        Text("Objects")
+                                    }
+                                )
+                            }
+                        }
+                    }
                 ) { innerPadding ->
+                    when (currentScreen) {
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
+                        AppScreen.ALARMS -> {
 
-                        Text(
-                            text = "Objects in Room: ${objects.size}"
-                        )
+                            AlarmsListScreen(
+                                alarms = alarms,
+                                modifier =
+                                    Modifier.padding(innerPadding),
 
-                        Spacer(
-                            modifier = Modifier.height(16.dp)
-                        )
+                                onAddAlarm = {
+                                    resetAlarmForm()
 
-                        objects.forEach { scanObject ->
-                            Text(
-                                text = "${scanObject.emoji} ${scanObject.name} — ${scanObject.barcodeValue}"
+                                    currentScreen =
+                                        AppScreen.CREATE_ALARM
+                                },
+
+                                onEnabledChanged = {
+                                        alarmId,
+                                        enabled ->
+
+                                    scope.launch {
+                                        alarmDao.setEnabled(
+                                            alarmId,
+                                            enabled
+                                        )
+                                    }
+                                }
                             )
                         }
 
-                        Spacer(
-                            modifier = Modifier.height(24.dp)
-                        )
+                        AppScreen.OBJECTS -> {
 
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    scanObjectDao.insert(
-                                        ScanObjectEntity(
-                                            name = "Test Notebook",
-                                            emoji = "📓",
-                                            barcodeValue = "882709993490",
-                                            barcodeFormat = 0
+                            ObjectsListScreen(
+                                objects = objects,
+                                modifier =
+                                    Modifier.padding(innerPadding),
+
+                                onAddObject = {
+
+                                    scannedBarcode = null
+                                    objectName = ""
+                                    objectEmoji = ""
+                                    errorMessage = null
+
+                                    requestCameraAccess {
+
+                                        currentScreen =
+                                            AppScreen.OBJECT_SCANNER
+                                    }
+                                }
+                            )
+                        }
+
+                        AppScreen.OBJECT_SCANNER -> {
+
+                            BarcodeScannerView(
+                                modifier = Modifier.fillMaxSize(),
+
+                                onBarcodeScanned = {
+                                        barcode,
+                                        format ->
+
+                                    scannedBarcode = barcode
+                                    scannedBarcodeFormat = format
+
+                                    currentScreen =
+                                        AppScreen.OBJECT_DETAILS
+                                }
+                            )
+                        }
+
+                        AppScreen.OBJECT_DETAILS -> {
+
+                            ObjectDetailsScreen(
+                                barcode =
+                                    scannedBarcode ?: "",
+
+                                name = objectName,
+                                emoji = objectEmoji,
+                                errorMessage = errorMessage,
+
+                                modifier =
+                                    Modifier.padding(innerPadding),
+
+                                onNameChanged = {
+                                    objectName = it
+                                },
+
+                                onEmojiChanged = {
+                                    objectEmoji = it
+                                },
+
+                                onSave = {
+
+                                    val barcode =
+                                        scannedBarcode
+                                            ?: return@ObjectDetailsScreen
+
+                                    scope.launch {
+
+                                        val existing =
+                                            scanObjectDao
+                                                .getByBarcode(barcode)
+
+                                        if (existing != null) {
+
+                                            errorMessage =
+                                                "That barcode is already saved as ${existing.emoji} ${existing.name}"
+
+                                            return@launch
+                                        }
+
+                                        scanObjectDao.insert(
+                                            ScanObjectEntity(
+                                                name =
+                                                    objectName.trim(),
+                                                emoji =
+                                                    objectEmoji.trim(),
+                                                barcodeValue =
+                                                    barcode,
+                                                barcodeFormat =
+                                                    scannedBarcodeFormat
+                                            )
                                         )
-                                    )
+
+                                        currentScreen =
+                                            AppScreen.OBJECTS
+                                    }
+                                },
+
+                                onCancel = {
+                                    currentScreen =
+                                        AppScreen.OBJECTS
                                 }
-                            }
-                        ) {
-                            Text("INSERT TEST OBJECT")
+                            )
                         }
 
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    scanObjectDao.deleteAll()
+                        AppScreen.CREATE_ALARM -> {
+
+                            CreateAlarmScreen(
+                                hour = alarmHour,
+                                minute = alarmMinute,
+
+                                label = alarmLabel,
+
+                                repeatDays =
+                                    alarmRepeatDays,
+
+                                objects = objects,
+
+                                selectedObjectIds =
+                                    selectedObjectIds,
+
+                                modifier =
+                                    Modifier.padding(innerPadding),
+
+                                onTimeChanged = {
+                                        hour,
+                                        minute ->
+
+                                    alarmHour = hour
+                                    alarmMinute = minute
+                                },
+
+                                onLabelChanged = {
+                                    alarmLabel = it
+                                },
+
+                                onRepeatDaysChanged = {
+                                    alarmRepeatDays = it
+                                },
+
+                                onObjectToggle = { objectId ->
+
+                                    selectedObjectIds =
+                                        if (
+                                            objectId in
+                                            selectedObjectIds
+                                        ) {
+
+                                            selectedObjectIds -
+                                                    objectId
+
+                                        } else {
+
+                                            selectedObjectIds +
+                                                    objectId
+                                        }
+                                },
+
+                                onSave = {
+
+                                    scope.launch {
+
+                                        alarmDao
+                                            .insertAlarmWithObjects(
+                                                alarm =
+                                                    AlarmEntity(
+                                                        hour =
+                                                            alarmHour,
+                                                        minute =
+                                                            alarmMinute,
+                                                        label =
+                                                            alarmLabel
+                                                                .trim(),
+                                                        enabled = true,
+                                                        repeatDays =
+                                                            alarmRepeatDays
+                                                    ),
+
+                                                objectIds =
+                                                    selectedObjectIds
+                                            )
+
+                                        resetAlarmForm()
+
+                                        currentScreen =
+                                            AppScreen.ALARMS
+                                    }
+                                },
+
+                                onCancel = {
+
+                                    resetAlarmForm()
+
+                                    currentScreen =
+                                        AppScreen.ALARMS
+                                },
+
+                                onManageObjects = {
+
+                                    currentScreen =
+                                        AppScreen.OBJECTS
                                 }
-                            }
-                        ) {
-                            Text("DELETE ALL TEST OBJECTS")
+                            )
                         }
+                    }
+
+
                     }
                 }
             }
@@ -121,7 +472,7 @@ class MainActivity : ComponentActivity() {
 
 
     }
-}
+
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {

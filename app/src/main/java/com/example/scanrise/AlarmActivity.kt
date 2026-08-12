@@ -49,7 +49,7 @@ class AlarmActivity : ComponentActivity() {
 
                     BarcodeScannerView(
                         modifier = Modifier.fillMaxSize(),
-                        onBarcodeScanned = { barcode ->
+                        onBarcodeScanned = { barcode, _ ->
 
                             scannedBarcode = barcode
 

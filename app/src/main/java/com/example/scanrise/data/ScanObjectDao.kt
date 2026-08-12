@@ -14,6 +14,10 @@ interface ScanObjectDao {
     @Query("SELECT * FROM scan_objects ORDER BY name")
     fun getAll(): Flow<List<ScanObjectEntity>>
 
+
+    @Query("SELECT * FROM scan_objects WHERE barcodeValue = :barcode LIMIT 1")
+    suspend fun getByBarcode(barcode: String): ScanObjectEntity?
+
     @Query("SELECT * FROM scan_objects WHERE id = :id")
     suspend fun getById(id: Long): ScanObjectEntity?
 
