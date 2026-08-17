@@ -21,15 +21,59 @@ import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.example.scanrise.alarm.AlarmScheduler
+import com.example.scanrise.data.AlarmWithObjects
+import com.example.scanrise.data.ScanRiseDatabase
 class AlarmActivity : ComponentActivity() {
 
+    private var alarmWithObjects by
+    mutableStateOf<AlarmWithObjects?>(null)
+
+    private var loadFailed by
+    mutableStateOf(false)
     private var ringtone: Ringtone? = null
+
+    private var alarmId: Long = -1L
 
     private var scannedBarcode by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        alarmId =
+            intent.getLongExtra(
+                AlarmScheduler.EXTRA_ALARM_ID,
+                -1L
+            )
+
+        if (alarmId == -1L) {
+
+            loadFailed = true
+
+        } else {
+
+            lifecycleScope.launch {
+
+                val database =
+                    ScanRiseDatabase.getDatabase(
+                        applicationContext
+                    )
+
+                alarmWithObjects =
+                    database
+                        .alarmDao()
+                        .getByIdWithObjects(
+                            alarmId
+                        )
+
+                if (alarmWithObjects == null) {
+                    loadFailed = true
+                }
+            }
+        }
 
         startAlarmSound()
 
@@ -49,14 +93,32 @@ class AlarmActivity : ComponentActivity() {
 
                     BarcodeScannerView(
                         modifier = Modifier.fillMaxSize(),
-                        onBarcodeScanned = { barcode, _ ->
+                        onBarcodeScanned = {
+                                barcode,
+                                _ ->
 
                             scannedBarcode = barcode
 
-                            if (barcode == "882709993490") {
+                            val currentAlarm =
+                                alarmWithObjects
+
+                            val matches =
+                                currentAlarm
+                                    ?.objects
+                                    ?.any { scanObject ->
+
+                                        scanObject.barcodeValue ==
+                                                barcode
+                                    }
+                                    ?: false
+
+                            if (matches) {
+
                                 stopAlarm()
                                 finish()
+
                             } else {
+
                                 showScanner = false
                             }
                         }
@@ -81,10 +143,44 @@ class AlarmActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center
                 ) {
 
+                    val currentAlarm =
+                        alarmWithObjects
+
                     Text(
-                        text = "🚨 SCANRISE TEST ALARM 🚨",
+                        text =
+                            currentAlarm
+                                ?.alarm
+                                ?.label
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "ScanRise Alarm",
                         fontSize = 28.sp
                     )
+
+                    Spacer(
+                        modifier = Modifier.height(16.dp)
+                    )
+
+                    if (currentAlarm != null) {
+
+                        Text(
+                            text = "Scan one of:"
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+
+                        Text(
+                            text =
+                                currentAlarm.objects
+                                    .joinToString("   ") {
+                                        "${it.emoji} ${it.name}"
+                                    },
+                            fontSize = 18.sp
+                        )
+                    }
 
                     Spacer(
                         modifier = Modifier.height(32.dp)
@@ -176,8 +272,20 @@ class AlarmActivity : ComponentActivity() {
     }
 
     private fun stopAlarm() {
+
         ringtone?.stop()
         ringtone = null
+
+        if (alarmId != -1L) {
+
+            NotificationManagerCompat
+                .from(this)
+                .cancel(
+                    AlarmReceiver.notificationId(
+                        alarmId
+                    )
+                )
+        }
     }
 
     override fun onDestroy() {

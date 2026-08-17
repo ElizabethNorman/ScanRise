@@ -50,6 +50,10 @@ abstract class AlarmDao {
         return alarmId
     }
 
+    @Transaction
+    @Query("SELECT * FROM alarms WHERE enabled = 1")
+    abstract suspend fun getAllEnabledWithObjects(): List<AlarmWithObjects>
+
     @Query(
         """
         UPDATE alarms
@@ -71,4 +75,10 @@ abstract class AlarmDao {
     abstract suspend fun delete(
         alarmId: Long
     )
+
+    @Transaction
+    @Query("SELECT * FROM alarms WHERE id = :alarmId")
+    abstract suspend fun getByIdWithObjects(
+        alarmId: Long
+    ): AlarmWithObjects?
 }

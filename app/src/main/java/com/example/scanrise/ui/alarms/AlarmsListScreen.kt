@@ -20,6 +20,7 @@ fun AlarmsListScreen(
     alarms: List<AlarmWithObjects>,
     onAddAlarm: () -> Unit,
     onEnabledChanged: (Long, Boolean) -> Unit,
+    onDeleteAlarm: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -156,6 +157,19 @@ fun AlarmsListScreen(
                                         .typography
                                         .bodyMedium
                             )
+
+                            Spacer(
+                                modifier =
+                                    Modifier.height(8.dp)
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    onDeleteAlarm(alarm.id)
+                                }
+                            ) {
+                                Text("Delete")
+                            }
                         }
                     }
                 }

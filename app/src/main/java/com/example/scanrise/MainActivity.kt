@@ -43,6 +43,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.scanrise.alarm.AlarmScheduler
 import com.example.scanrise.data.ScanRiseDatabase
 import com.example.scanrise.data.ScanObjectEntity
 
@@ -51,7 +52,9 @@ import com.example.scanrise.ui.alarms.AlarmsListScreen
 import com.example.scanrise.ui.alarms.CreateAlarmScreen
 import com.example.scanrise.ui.objects.ObjectDetailsScreen
 import com.example.scanrise.ui.objects.ObjectsListScreen
-
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 enum class AppScreen {
     ALARMS,
     OBJECTS,
@@ -95,6 +98,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
@@ -105,11 +110,15 @@ class MainActivity : ComponentActivity() {
         val scanObjectDao = database.scanObjectDao()
         val alarmDao = database.alarmDao()
 
-
+        lifecycleScope.launch(Dispatchers.IO) {
+            AlarmScheduler.restoreEnabledAlarms(
+                applicationContext
+            )
+        }
 
         setContent {
             ScanRiseTheme {
-
+                val context = LocalContext.current
                 val objects by scanObjectDao
                     .getAll()
                     .collectAsState(initial = emptyList())
@@ -247,9 +256,51 @@ class MainActivity : ComponentActivity() {
                                         enabled ->
 
                                     scope.launch {
+
                                         alarmDao.setEnabled(
                                             alarmId,
                                             enabled
+                                        )
+
+                                        if (enabled) {
+
+                                            val alarm =
+                                                alarmDao
+                                                    .getByIdWithObjects(
+                                                        alarmId
+                                                    )
+                                                    ?.alarm
+
+                                            if (alarm != null) {
+
+                                                AlarmScheduler.scheduleNext(
+                                                    context,
+                                                    alarm.copy(
+                                                        enabled = true
+                                                    )
+                                                )
+                                            }
+
+                                        } else {
+
+                                            AlarmScheduler.cancel(
+                                                context,
+                                                alarmId
+                                            )
+                                        }
+                                    }
+                                },
+                                onDeleteAlarm = { alarmId ->
+
+                                    scope.launch {
+
+                                        AlarmScheduler.cancel(
+                                            context,
+                                            alarmId
+                                        )
+
+                                        alarmDao.delete(
+                                            alarmId
                                         )
                                     }
                                 }
@@ -420,25 +471,30 @@ class MainActivity : ComponentActivity() {
 
                                     scope.launch {
 
-                                        alarmDao
-                                            .insertAlarmWithObjects(
-                                                alarm =
-                                                    AlarmEntity(
-                                                        hour =
-                                                            alarmHour,
-                                                        minute =
-                                                            alarmMinute,
-                                                        label =
-                                                            alarmLabel
-                                                                .trim(),
-                                                        enabled = true,
-                                                        repeatDays =
-                                                            alarmRepeatDays
-                                                    ),
-
-                                                objectIds =
-                                                    selectedObjectIds
+                                        val alarm =
+                                            AlarmEntity(
+                                                hour = alarmHour,
+                                                minute = alarmMinute,
+                                                label = alarmLabel.trim(),
+                                                enabled = true,
+                                                repeatDays = alarmRepeatDays
                                             )
+
+                                        val alarmId =
+                                            alarmDao.insertAlarmWithObjects(
+                                                alarm = alarm,
+                                                objectIds = selectedObjectIds
+                                            )
+
+                                        val savedAlarm =
+                                            alarm.copy(
+                                                id = alarmId
+                                            )
+
+                                        AlarmScheduler.scheduleNext(
+                                            context,
+                                            savedAlarm
+                                        )
 
                                         resetAlarmForm()
 
