@@ -3,22 +3,33 @@ package com.example.scanrise.ui.alarms
 
 import android.app.TimePickerDialog
 import android.text.format.DateFormat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.scanrise.data.RepeatDay
 import com.example.scanrise.data.ScanObjectEntity
 import com.example.scanrise.data.isDaySelected
 import com.example.scanrise.data.toggleRepeatDay
+import com.example.scanrise.ui.theme.Brass
+import com.example.scanrise.ui.theme.Night
+import com.example.scanrise.ui.theme.NightRaised
+import com.example.scanrise.ui.theme.Parchment
+import com.example.scanrise.ui.theme.SoftBrass
+import com.example.scanrise.ui.theme.Slate
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CreateAlarmScreen(
+    isEditing: Boolean,
     hour: Int,
     minute: Int,
     label: String,
@@ -43,6 +54,7 @@ fun CreateAlarmScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(Night)
             .padding(24.dp),
         verticalArrangement =
             Arrangement.spacedBy(20.dp)
@@ -51,9 +63,15 @@ fun CreateAlarmScreen(
         item {
 
             Text(
-                text = "Create Alarm",
-                style =
-                    MaterialTheme.typography.headlineLarge
+                text = if (isEditing) "Edit Alarm" else "Create Alarm",
+                style = MaterialTheme.typography.headlineLarge,
+                color = Parchment
+            )
+
+            Text(
+                text = "Set the time and what you'll scan to dismiss it.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Slate
             )
         }
 
@@ -76,7 +94,15 @@ fun CreateAlarmScreen(
                         DateFormat.is24HourFormat(context)
                     ).show()
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(76.dp),
+                shape = RoundedCornerShape(18.dp),
+                border = BorderStroke(1.dp, Slate.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = NightRaised,
+                    contentColor = Parchment
+                )
             ) {
 
                 Text(
@@ -102,7 +128,18 @@ fun CreateAlarmScreen(
                     Text("Morning")
                 },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Parchment,
+                    unfocusedTextColor = Parchment,
+                    focusedContainerColor = NightRaised,
+                    unfocusedContainerColor = NightRaised,
+                    focusedBorderColor = Brass,
+                    unfocusedBorderColor = Slate,
+                    focusedLabelColor = Brass,
+                    unfocusedLabelColor = Slate
+                )
             )
         }
 
@@ -112,8 +149,8 @@ fun CreateAlarmScreen(
 
                 Text(
                     text = "Repeat",
-                    style =
-                        MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Parchment
                 )
 
                 Spacer(
@@ -146,7 +183,19 @@ fun CreateAlarmScreen(
                             },
                             label = {
                                 Text(day.shortName)
-                            }
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = NightRaised,
+                                labelColor = Slate,
+                                selectedContainerColor = SoftBrass,
+                                selectedLabelColor = Night
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isDaySelected(repeatDays, day),
+                                borderColor = Slate,
+                                selectedBorderColor = SoftBrass
+                            )
                         )
                     }
                 }
@@ -164,14 +213,14 @@ fun CreateAlarmScreen(
 
                 Text(
                     text = "Scan objects",
-                    style =
-                        MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Parchment
                 )
 
                 TextButton(
                     onClick = onManageObjects
                 ) {
-                    Text("Manage Objects")
+                    Text("Manage objects", color = Brass)
                 }
             }
         }
@@ -182,7 +231,8 @@ fun CreateAlarmScreen(
 
                 Text(
                     text =
-                        "You need at least one saved object before this alarm can be enabled."
+                        "Add an object before saving this alarm.",
+                    color = Slate
                 )
             }
 
@@ -200,8 +250,10 @@ fun CreateAlarmScreen(
                     onClick = {
                         onObjectToggle(scanObject.id)
                     },
-                    modifier =
-                        Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = NightRaised),
+                    border = BorderStroke(1.dp, Slate.copy(alpha = 0.45f))
                 ) {
 
                     Row(
@@ -210,12 +262,15 @@ fun CreateAlarmScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp),
                         horizontalArrangement =
-                            Arrangement.SpaceBetween
+                            Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                     ) {
 
                         Text(
                             text =
-                                "${scanObject.emoji} ${scanObject.name}"
+                                "${scanObject.emoji}  ${scanObject.name}",
+                            color = Parchment,
+                            style = MaterialTheme.typography.bodyLarge
                         )
 
                         Checkbox(
@@ -240,9 +295,18 @@ fun CreateAlarmScreen(
             Button(
                 onClick = onSave,
                 enabled = canSave,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SoftBrass,
+                    contentColor = Night,
+                    disabledContainerColor = NightRaised,
+                    disabledContentColor = Slate
+                )
             ) {
-                Text("Save Alarm")
+                Text(if (isEditing) "Save Changes" else "Save Alarm")
             }
 
             Spacer(
@@ -253,7 +317,7 @@ fun CreateAlarmScreen(
                 onClick = onCancel,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Cancel")
+                Text("Cancel", color = Slate)
             }
         }
     }

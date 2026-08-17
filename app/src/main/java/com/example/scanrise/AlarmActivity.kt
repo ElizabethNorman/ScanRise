@@ -7,13 +7,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,6 +30,14 @@ import kotlinx.coroutines.launch
 import com.example.scanrise.alarm.AlarmScheduler
 import com.example.scanrise.data.AlarmWithObjects
 import com.example.scanrise.data.ScanRiseDatabase
+import android.content.Intent
+import com.example.scanrise.ui.theme.Brass
+import com.example.scanrise.ui.theme.Hairline
+import com.example.scanrise.ui.theme.Ink
+import com.example.scanrise.ui.theme.Paper
+import com.example.scanrise.ui.theme.Parchment
+import com.example.scanrise.ui.theme.ScanRiseTheme
+import com.example.scanrise.ui.theme.Slate
 class AlarmActivity : ComponentActivity() {
 
     private var alarmWithObjects by
@@ -34,7 +45,7 @@ class AlarmActivity : ComponentActivity() {
 
     private var loadFailed by
     mutableStateOf(false)
-    private var ringtone: Ringtone? = null
+
 
     private var alarmId: Long = -1L
 
@@ -73,18 +84,50 @@ class AlarmActivity : ComponentActivity() {
                     loadFailed = true
                 }
             }
+
+
         }
 
-        startAlarmSound()
+
 
         setContent {
+            ScanRiseTheme {
 
-            DisposableEffect(Unit) {
-                onDispose {
-                    ringtone?.stop()
+            if (loadFailed) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Parchment)
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Unable to load alarm",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Ink
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(32.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            stopAlarm()
+                            finish()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Ink,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Stop alarm")
+                    }
                 }
-            }
 
+                return@ScanRiseTheme
+            }
             if (showScanner) {
 
                 Box(
@@ -125,11 +168,14 @@ class AlarmActivity : ComponentActivity() {
                     )
 
                     Text(
-                        text = "SCAN A BARCODE",
-                        fontSize = 24.sp,
+                        text = "Point the camera at your saved object",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Ink,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(32.dp)
+                            .padding(24.dp)
+                            .background(Paper, RoundedCornerShape(50))
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
                     )
                 }
 
@@ -138,13 +184,22 @@ class AlarmActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(32.dp),
+                        .background(Parchment)
+                        .padding(horizontal = 28.dp, vertical = 36.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
 
                     val currentAlarm =
                         alarmWithObjects
+
+                    Text(
+                        text = "GOOD MORNING",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Brass
+                    )
+
+                    Spacer(Modifier.height(12.dp))
 
                     Text(
                         text =
@@ -154,32 +209,53 @@ class AlarmActivity : ComponentActivity() {
                                 ?.takeIf {
                                     it.isNotBlank()
                                 }
-                                ?: "ScanRise Alarm",
-                        fontSize = 28.sp
+                                ?: "Time to rise",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Ink
                     )
 
                     Spacer(
                         modifier = Modifier.height(16.dp)
                     )
 
+
+
                     if (currentAlarm != null) {
 
                         Text(
-                            text = "Scan one of:"
+                            text = "Scan one of these to dismiss",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Slate
                         )
 
                         Spacer(
                             modifier = Modifier.height(8.dp)
                         )
 
-                        Text(
-                            text =
-                                currentAlarm.objects
-                                    .joinToString("   ") {
-                                        "${it.emoji} ${it.name}"
-                                    },
-                            fontSize = 18.sp
-                        )
+                        currentAlarm.objects.forEach { scanObject ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = CardDefaults.cardColors(containerColor = Paper),
+                                border = BorderStroke(1.dp, Hairline)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(18.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(scanObject.emoji, fontSize = 32.sp)
+                                    Spacer(Modifier.width(14.dp))
+                                    Text(
+                                        scanObject.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = Ink
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
                     }
 
                     Spacer(
@@ -189,7 +265,8 @@ class AlarmActivity : ComponentActivity() {
                     scannedBarcode?.let {
                         Text(
                             text = "Scanned: $it",
-                            fontSize = 18.sp
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Slate
                         )
 
                         Spacer(
@@ -201,11 +278,19 @@ class AlarmActivity : ComponentActivity() {
                         onClick = {
                             openScanner()
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(58.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Ink,
+                            contentColor = Color.White
+                        )
                     ) {
                         Text(
-                            text = "SCAN TO DISMISS",
-                            fontSize = 20.sp
+                            text = "Open scanner",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
 
@@ -213,21 +298,27 @@ class AlarmActivity : ComponentActivity() {
                         modifier = Modifier.height(48.dp)
                     )
 
-                    Button(
+                    OutlinedButton(
                         onClick = {
                             stopAlarm()
                             finish()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp)
+                            .height(54.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        border = BorderStroke(1.dp, Hairline),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Slate
+                        )
                     ) {
                         Text(
-                            text = "STOP ALARM\nTESTING ONLY",
-                            fontSize = 24.sp
+                            text = "Stop alarm · testing only",
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
+            }
             }
         }
     }
@@ -254,27 +345,18 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
-    private fun startAlarmSound() {
-        val alarmUri =
-            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
-        ringtone = RingtoneManager.getRingtone(this, alarmUri).apply {
-            audioAttributes = android.media.AudioAttributes.Builder()
-                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                .build()
 
-            if (android.os.Build.VERSION.SDK_INT >= 28) {
-                isLooping = true
-            }
-
-            play()
-        }
-    }
 
     private fun stopAlarm() {
 
-        ringtone?.stop()
-        ringtone = null
+        val serviceIntent =
+            Intent(
+                this,
+                AlarmService::class.java
+            )
+
+        stopService(serviceIntent)
 
         if (alarmId != -1L) {
 
@@ -288,8 +370,4 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        ringtone?.stop()
-        super.onDestroy()
-    }
 }

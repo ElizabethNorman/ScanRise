@@ -2,10 +2,12 @@ package com.example.scanrise.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Night = Color(0xFF111820)
+val NightRaised = Color(0xFF1A232D)
+val Parchment = Color(0xFFF6F2E9)
+val Paper = Color(0xFFFFFCF5)
+val Ink = Color(0xFF17202A)
+val Slate = Color(0xFF64707C)
+val Brass = Color(0xFF9A7136)
+val SoftBrass = Color(0xFFE9D9BA)
+val Hairline = Color(0xFFDCD5C8)

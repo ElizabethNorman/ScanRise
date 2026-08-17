@@ -40,6 +40,8 @@ import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -171,6 +173,10 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
+                var editingAlarmId by remember {
+                    mutableStateOf<Long?>(null)
+                }
+
                 fun resetAlarmForm() {
 
                     alarmHour = 7
@@ -178,6 +184,7 @@ class MainActivity : ComponentActivity() {
                     alarmLabel = ""
                     alarmRepeatDays = 0
                     selectedObjectIds = emptySet()
+                    editingAlarmId = null
                 }
 
                 val scope = rememberCoroutineScope()
@@ -192,7 +199,10 @@ class MainActivity : ComponentActivity() {
                             currentScreen == AppScreen.OBJECTS
                         ) {
 
-                            NavigationBar {
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.background,
+                                tonalElevation = 0.dp
+                            ) {
 
                                 NavigationBarItem(
                                     selected =
@@ -210,7 +220,12 @@ class MainActivity : ComponentActivity() {
 
                                     label = {
                                         Text("Alarms")
-                                    }
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        indicatorColor = MaterialTheme.colorScheme.surface
+                                    )
                                 )
 
                                 NavigationBarItem(
@@ -229,7 +244,12 @@ class MainActivity : ComponentActivity() {
 
                                     label = {
                                         Text("Objects")
-                                    }
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        indicatorColor = MaterialTheme.colorScheme.surface
+                                    )
                                 )
                             }
                         }
@@ -249,6 +269,27 @@ class MainActivity : ComponentActivity() {
 
                                     currentScreen =
                                         AppScreen.CREATE_ALARM
+                                },
+
+                                onEditAlarm = { alarmId ->
+                                    val alarmWithObjects =
+                                        alarms.firstOrNull {
+                                            it.alarm.id == alarmId
+                                        }
+
+                                    if (alarmWithObjects != null) {
+                                        val alarm = alarmWithObjects.alarm
+                                        editingAlarmId = alarm.id
+                                        alarmHour = alarm.hour
+                                        alarmMinute = alarm.minute
+                                        alarmLabel = alarm.label
+                                        alarmRepeatDays = alarm.repeatDays
+                                        selectedObjectIds =
+                                            alarmWithObjects.objects
+                                                .map { it.id }
+                                                .toSet()
+                                        currentScreen = AppScreen.CREATE_ALARM
+                                    }
                                 },
 
                                 onEnabledChanged = {
@@ -303,6 +344,13 @@ class MainActivity : ComponentActivity() {
                                             alarmId
                                         )
                                     }
+                                },
+                                onDebugAlarm = {
+                                    if (canScheduleExactAlarm(context)) {
+                                        scheduleTestAlarm(context)
+                                    } else {
+                                        requestExactAlarmPermission(context)
+                                    }
                                 }
                             )
                         }
@@ -325,6 +373,12 @@ class MainActivity : ComponentActivity() {
 
                                         currentScreen =
                                             AppScreen.OBJECT_SCANNER
+                                    }
+                                },
+
+                                onDeleteObject = { scanObject ->
+                                    scope.launch {
+                                        scanObjectDao.delete(scanObject)
                                     }
                                 }
                             )
@@ -417,6 +471,7 @@ class MainActivity : ComponentActivity() {
                         AppScreen.CREATE_ALARM -> {
 
                             CreateAlarmScreen(
+                                isEditing = editingAlarmId != null,
                                 hour = alarmHour,
                                 minute = alarmMinute,
 
@@ -470,6 +525,46 @@ class MainActivity : ComponentActivity() {
                                 onSave = {
 
                                     scope.launch {
+
+                                        val alarmIdToEdit = editingAlarmId
+
+                                        if (alarmIdToEdit != null) {
+                                            val existingAlarm =
+                                                alarmDao.getByIdWithObjects(
+                                                    alarmIdToEdit
+                                                )?.alarm
+
+                                            if (existingAlarm != null) {
+                                                val updatedAlarm =
+                                                    existingAlarm.copy(
+                                                        hour = alarmHour,
+                                                        minute = alarmMinute,
+                                                        label = alarmLabel.trim(),
+                                                        repeatDays = alarmRepeatDays
+                                                    )
+
+                                                alarmDao.updateAlarmWithObjects(
+                                                    alarm = updatedAlarm,
+                                                    objectIds = selectedObjectIds
+                                                )
+
+                                                AlarmScheduler.cancel(
+                                                    context,
+                                                    alarmIdToEdit
+                                                )
+
+                                                if (updatedAlarm.enabled) {
+                                                    AlarmScheduler.scheduleNext(
+                                                        context,
+                                                        updatedAlarm
+                                                    )
+                                                }
+                                            }
+
+                                            resetAlarmForm()
+                                            currentScreen = AppScreen.ALARMS
+                                            return@launch
+                                        }
 
                                         val alarm =
                                             AlarmEntity(

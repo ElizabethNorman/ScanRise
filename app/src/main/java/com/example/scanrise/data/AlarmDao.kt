@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -29,6 +30,16 @@ abstract class AlarmDao {
         crossRefs: List<AlarmObjectCrossRef>
     )
 
+    @Update
+    protected abstract suspend fun updateAlarm(
+        alarm: AlarmEntity
+    )
+
+    @Query("DELETE FROM alarm_object_cross_ref WHERE alarmId = :alarmId")
+    protected abstract suspend fun deleteCrossRefs(
+        alarmId: Long
+    )
+
     @Transaction
     open suspend fun insertAlarmWithObjects(
         alarm: AlarmEntity,
@@ -48,6 +59,23 @@ abstract class AlarmDao {
         insertCrossRefs(crossRefs)
 
         return alarmId
+    }
+
+    @Transaction
+    open suspend fun updateAlarmWithObjects(
+        alarm: AlarmEntity,
+        objectIds: Set<Long>
+    ) {
+        updateAlarm(alarm)
+        deleteCrossRefs(alarm.id)
+        insertCrossRefs(
+            objectIds.map { objectId ->
+                AlarmObjectCrossRef(
+                    alarmId = alarm.id,
+                    objectId = objectId
+                )
+            }
+        )
     }
 
     @Transaction

@@ -1,38 +1,61 @@
 package com.example.scanrise.ui.alarms
 
-import android.content.Context
 import android.text.format.DateFormat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.scanrise.data.AlarmWithObjects
 import com.example.scanrise.data.RepeatDay
 import com.example.scanrise.data.isDaySelected
+import com.example.scanrise.ui.theme.Brass
+import com.example.scanrise.ui.theme.Night
+import com.example.scanrise.ui.theme.NightRaised
+import com.example.scanrise.ui.theme.Parchment
+import com.example.scanrise.ui.theme.SoftBrass
+import com.example.scanrise.ui.theme.Slate
 import java.util.Calendar
 
 @Composable
 fun AlarmsListScreen(
     alarms: List<AlarmWithObjects>,
     onAddAlarm: () -> Unit,
+    onEditAlarm: (Long) -> Unit,
     onEnabledChanged: (Long, Boolean) -> Unit,
     onDeleteAlarm: (Long) -> Unit,
+    onDebugAlarm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .background(Night)
+            .padding(horizontal = 20.dp)
     ) {
+        Spacer(Modifier.height(28.dp))
 
         Text(
-            text = "Alarms",
-            style = MaterialTheme.typography.headlineLarge
+            text = "Your alarms",
+            style = MaterialTheme.typography.headlineLarge,
+            color = Parchment
+        )
+
+        Text(
+            text = "Scan to stop alarm!",
+            style = MaterialTheme.typography.bodyLarge,
+            color = Slate
         )
 
         Spacer(
@@ -48,7 +71,18 @@ fun AlarmsListScreen(
                 contentAlignment = Alignment.Center
             ) {
 
-                Text("No alarms yet")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No alarms yet",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Parchment
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Create one when you're ready.",
+                        color = Slate
+                    )
+                }
             }
 
         } else {
@@ -67,8 +101,13 @@ fun AlarmsListScreen(
                     val alarm = alarmWithObjects.alarm
 
                     Card(
-                        modifier =
-                            Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onEditAlarm(alarm.id) },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = NightRaised),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate.copy(alpha = 0.35f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
 
                         Column(
@@ -97,7 +136,8 @@ fun AlarmsListScreen(
                                         style =
                                             MaterialTheme
                                                 .typography
-                                                .headlineMedium
+                                                .displayLarge,
+                                        color = if (alarm.enabled) Parchment else Slate
                                     )
 
                                     if (
@@ -109,7 +149,8 @@ fun AlarmsListScreen(
                                             style =
                                                 MaterialTheme
                                                     .typography
-                                                    .titleMedium
+                                                    .titleMedium,
+                                            color = Slate
                                         )
                                     }
                                 }
@@ -121,7 +162,14 @@ fun AlarmsListScreen(
                                             alarm.id,
                                             it
                                         )
-                                    }
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Brass,
+                                        uncheckedThumbColor = Slate,
+                                        uncheckedTrackColor = Night,
+                                        uncheckedBorderColor = Slate
+                                    )
                                 )
                             }
 
@@ -130,45 +178,37 @@ fun AlarmsListScreen(
                                     Modifier.height(8.dp)
                             )
 
-                            Text(
-                                text =
-                                    repeatDaysText(
-                                        alarm.repeatDays
-                                    ),
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .bodyMedium
-                            )
-
-                            Spacer(
-                                modifier =
-                                    Modifier.height(8.dp)
-                            )
-
-                            Text(
-                                text =
-                                    alarmWithObjects.objects
-                                        .joinToString("  ") {
-                                            "${it.emoji} ${it.name}"
-                                        },
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .bodyMedium
-                            )
-
-                            Spacer(
-                                modifier =
-                                    Modifier.height(8.dp)
-                            )
-
-                            TextButton(
-                                onClick = {
-                                    onDeleteAlarm(alarm.id)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AlarmTag(repeatDaysText(alarm.repeatDays))
+                                alarmWithObjects.objects.take(2).forEach {
+                                    AlarmTag("${it.emoji} ${it.name}")
                                 }
+                            }
+
+                            Spacer(
+                                modifier =
+                                    Modifier.height(8.dp)
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
                             ) {
-                                Text("Delete")
+                                TextButton(
+                                    onClick = {
+                                        onEditAlarm(alarm.id)
+                                    }
+                                ) {
+                                    Text("Edit", color = Brass)
+                                }
+
+                                TextButton(
+                                    onClick = {
+                                        onDeleteAlarm(alarm.id)
+                                    }
+                                ) {
+                                    Text("Delete", color = Slate)
+                                }
                             }
                         }
                     }
@@ -180,13 +220,47 @@ fun AlarmsListScreen(
             modifier = Modifier.height(16.dp)
         )
 
+        OutlinedButton(
+            onClick = onDebugAlarm,
+            modifier = Modifier.fillMaxWidth(),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Slate.copy(alpha = 0.5f)),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate)
+        ) {
+            Text("Debug · alarm in 60 seconds")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
         Button(
             onClick = onAddAlarm,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = SoftBrass,
+                contentColor = Night
+            )
         ) {
-            Text("+ Add Alarm")
+            Text("Add alarm", fontWeight = FontWeight.SemiBold)
         }
+
+        Spacer(Modifier.height(16.dp))
     }
+}
+
+@Composable
+private fun AlarmTag(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = Slate,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Night)
+            .border(1.dp, Slate.copy(alpha = 0.4f), RoundedCornerShape(50))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    )
 }
 
 @Composable

@@ -9,9 +9,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.example.scanrise.alarm.AlarmScheduler
 import androidx.room.Room
 import kotlinx.coroutines.CoroutineScope
@@ -37,71 +39,34 @@ class AlarmReceiver : BroadcastReceiver() {
             return
         }
 
-        handleAlarmLifecycle(
-            context,
-            alarmId
+        Log.d(
+            "ScanRiseAlarm",
+            "ALARM RECEIVER FIRED: alarmId=$alarmId"
         )
 
         createNotificationChannel(context)
 
-        val alarmIntent =
+        val serviceIntent =
             Intent(
                 context,
-                AlarmActivity::class.java
+                AlarmService::class.java
             ).apply {
 
                 putExtra(
                     AlarmScheduler.EXTRA_ALARM_ID,
                     alarmId
                 )
-
-                flags =
-                    Intent.FLAG_ACTIVITY_NEW_TASK or
-                            Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
 
-        val alarmPendingIntent =
-            PendingIntent.getActivity(
-                context,
-                alarmId.toInt(),
-                alarmIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or
-                        PendingIntent.FLAG_IMMUTABLE
-            )
+        ContextCompat.startForegroundService(
+            context,
+            serviceIntent
+        )
 
-        val notification =
-            NotificationCompat.Builder(
-                context,
-                ALARM_CHANNEL_ID
-            )
-                .setSmallIcon(
-                    R.drawable
-                        .ic_lock_idle_alarm
-                )
-                .setContentTitle("ScanRise")
-                .setContentText(
-                    "Scan an object to dismiss"
-                )
-                .setPriority(
-                    NotificationCompat.PRIORITY_MAX
-                )
-                .setCategory(
-                    NotificationCompat.CATEGORY_ALARM
-                )
-                .setOngoing(true)
-                .setAutoCancel(false)
-                .setFullScreenIntent(
-                    alarmPendingIntent,
-                    true
-                )
-                .build()
-
-        NotificationManagerCompat
-            .from(context)
-            .notify(
-                notificationId(alarmId),
-                notification
-            )
+        handleAlarmLifecycle(
+            context,
+            alarmId
+        )
     }
 
     private fun createNotificationChannel(
