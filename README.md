@@ -4,7 +4,7 @@ ScanRise is a simple Android alarm app. The idea is to make it harder to turn of
 
 You can attach a barcode from something in another room — coffee, toothpaste, cereal, whatever works — and ScanRise will keep the alarm going until you physically get up and scan it.
 
-This is an early beta build, so expect a little roughness around the edges.
+This is an early beta build, so expect a little roughness around the edges. **To accommodate this there is still a "stop alarm immediately" button. I will replace that with a much more elaborate failsafe after a few friends let me know how things go!!!**
 
 ## Very important beta limitation!!!!!!
 I cannot for the life of me get it to reset alarms after a restart. This is because Android deliberately restricts background app startup, so restoring the alarms requires special handling that I'm still
