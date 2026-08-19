@@ -19,6 +19,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 @SuppressLint("UnsafeOptInUsageError")
 @Composable
@@ -27,6 +28,8 @@ fun BarcodeScannerView(
     onBarcodeScanned: (String, Int) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val isProcessing = AtomicBoolean(false)
+    val scanHandled = AtomicBoolean(false)
 
     AndroidView(
         modifier = modifier,
@@ -75,9 +78,18 @@ fun BarcodeScannerView(
 
                 imageAnalysis.setAnalyzer(executor) { imageProxy ->
 
+                    if (
+                        scanHandled.get() ||
+                        !isProcessing.compareAndSet(false, true)
+                    ) {
+                        imageProxy.close()
+                        return@setAnalyzer
+                    }
+
                     val mediaImage = imageProxy.image
 
                     if (mediaImage == null) {
+                        isProcessing.set(false)
                         imageProxy.close()
                         return@setAnalyzer
                     }
@@ -97,14 +109,25 @@ fun BarcodeScannerView(
                                 }
 
                             barcode?.rawValue?.let { value ->
-                                onBarcodeScanned(value, barcode.format)
+
+                                if (
+                                    scanHandled.compareAndSet(
+                                        false,
+                                        true
+                                    )
+                                ) {
+                                    onBarcodeScanned(
+                                        value,
+                                        barcode.format
+                                    )
+                                }
                             }
                         }
                         .addOnCompleteListener {
+                            isProcessing.set(false)
                             imageProxy.close()
                         }
                 }
-
                 try {
                     cameraProvider.unbindAll()
 
