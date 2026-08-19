@@ -101,8 +101,9 @@ ScanRise can be removed like any other Android app:
 
 Uninstalling it will remove its locally saved alarms and barcode objects.
 
----
 ## Attributions
 I took the logo from [FlatIcon](https://www.flaticon.com/free-icon/sunset_4814444?term=sunrise&page=1&position=12&origin=search&related_id=4814444). Thank you!
+
+---
 
 Thanks for testing my slightly hostile alarm clock.
