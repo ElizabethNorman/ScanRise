@@ -190,18 +190,17 @@ object AlarmScheduler {
         )
     }
 
-    private fun getNextTriggerTime(
-        alarm: AlarmEntity
+    internal fun getNextTriggerTime(
+        alarm: AlarmEntity,
+        now: Calendar = Calendar.getInstance()
     ): Long {
-
-        val now = Calendar.getInstance()
 
         // No repeat days:
         // next occurrence of this clock time.
         if (alarm.repeatDays == 0) {
 
             val next =
-                Calendar.getInstance().apply {
+                (now.clone() as Calendar).apply {
 
                     set(
                         Calendar.HOUR_OF_DAY,
@@ -239,7 +238,7 @@ object AlarmScheduler {
         for (daysAhead in 0..7) {
 
             val candidate =
-                Calendar.getInstance().apply {
+                (now.clone() as Calendar).apply {
 
                     add(
                         Calendar.DAY_OF_YEAR,

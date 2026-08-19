@@ -43,8 +43,16 @@ class BootReceiver : BroadcastReceiver() {
 
                 AlarmScheduler
                     .restoreEnabledAlarms(
-                        context
+                        context.applicationContext
                     )
+
+            } catch (error: Exception) {
+
+                Log.e(
+                    "ScanRiseBoot",
+                    "Failed to restore alarms after ${intent.action}",
+                    error
+                )
 
             } finally {
 
