@@ -12,8 +12,6 @@ figuring out :)
 
 After completely restarting your phone, **open ScanRise once before relying on your alarms**.
 
-Android/OEM reboot behaviour is still being worked on, and on some phones ScanRise may not restore its scheduled alarms until the app has been opened after a reboot.
-
 For a beta build, assume:
 
 > Reboot phone → open ScanRise once → alarms are good to go.
@@ -106,4 +104,4 @@ I took the logo from [FlatIcon](https://www.flaticon.com/free-icon/sunset_481444
 
 ---
 
-Thanks for testing my slightly hostile alarm clock.
+Thanks for testing my lil alarm clock app!!!!
