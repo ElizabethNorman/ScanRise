@@ -34,7 +34,6 @@ fun AlarmsListScreen(
     onEditAlarm: (Long) -> Unit,
     onEnabledChanged: (Long, Boolean) -> Unit,
     onDeleteAlarm: (Long) -> Unit,
-    onDebugAlarm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
 
@@ -50,12 +49,6 @@ fun AlarmsListScreen(
             text = "Your alarms",
             style = MaterialTheme.typography.headlineLarge,
             color = Parchment
-        )
-
-        Text(
-            text = "Scan to stop alarm!",
-            style = MaterialTheme.typography.bodyLarge,
-            color = Slate
         )
 
         Spacer(
@@ -219,17 +212,6 @@ fun AlarmsListScreen(
         Spacer(
             modifier = Modifier.height(16.dp)
         )
-
-        OutlinedButton(
-            onClick = onDebugAlarm,
-            modifier = Modifier.fillMaxWidth(),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Slate.copy(alpha = 0.5f)),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate)
-        ) {
-            Text("Debug · alarm in 60 seconds")
-        }
-
-        Spacer(Modifier.height(8.dp))
 
         Button(
             onClick = onAddAlarm,

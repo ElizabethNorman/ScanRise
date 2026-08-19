@@ -2,16 +2,18 @@ package com.example.scanrise
 
 import org.junit.Test
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 
-/**
- * Example local unit test, which will execute on the development machine (host).
- *
- * See [testing documentation](http://d.android.com/tools/testing).
- */
-class ExampleUnitTest {
+class GreetingForHourTest {
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun returnsGreetingForEachPartOfDay() {
+        assertEquals("Good night", greetingForHour(4))
+        assertEquals("Good morning", greetingForHour(5))
+        assertEquals("Good morning", greetingForHour(11))
+        assertEquals("Good afternoon", greetingForHour(12))
+        assertEquals("Good afternoon", greetingForHour(16))
+        assertEquals("Good evening", greetingForHour(17))
+        assertEquals("Good evening", greetingForHour(20))
+        assertEquals("Good night", greetingForHour(21))
     }
 }

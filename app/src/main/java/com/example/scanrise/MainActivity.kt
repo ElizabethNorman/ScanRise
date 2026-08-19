@@ -344,13 +344,6 @@ class MainActivity : ComponentActivity() {
                                             alarmId
                                         )
                                     }
-                                },
-                                onDebugAlarm = {
-                                    if (canScheduleExactAlarm(context)) {
-                                        scheduleTestAlarm(context)
-                                    } else {
-                                        requestExactAlarmPermission(context)
-                                    }
                                 }
                             )
                         }

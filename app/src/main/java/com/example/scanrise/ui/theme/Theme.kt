@@ -7,13 +7,22 @@ import androidx.compose.runtime.Composable
 private val DarkColorScheme = darkColorScheme(
     primary = SoftBrass,
     onPrimary = Night,
-    secondary = SoftBrass,
+    primaryContainer = EmeraldDeep,
+    onPrimaryContainer = EmeraldGlow,
+    secondary = EmeraldGlow,
+    onSecondary = Night,
+    secondaryContainer = EmeraldDeep,
+    onSecondaryContainer = Parchment,
     background = Night,
     surface = NightRaised,
     surfaceVariant = NightRaised,
     onBackground = Parchment,
     onSurface = Parchment,
-    outline = Slate
+    onSurfaceVariant = Slate,
+    outline = Slate,
+    outlineVariant = Slate.copy(alpha = 0.45f),
+    error = ErrorRed,
+    surfaceTint = SoftBrass
 )
 
 @Composable

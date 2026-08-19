@@ -38,6 +38,7 @@ import com.example.scanrise.ui.theme.Paper
 import com.example.scanrise.ui.theme.Parchment
 import com.example.scanrise.ui.theme.ScanRiseTheme
 import com.example.scanrise.ui.theme.Slate
+import java.util.Calendar
 class AlarmActivity : ComponentActivity() {
 
     private var alarmWithObjects by
@@ -193,11 +194,7 @@ class AlarmActivity : ComponentActivity() {
                     val currentAlarm =
                         alarmWithObjects
 
-                    Text(
-                        text = "GOOD MORNING",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Brass
-                    )
+
 
                     Spacer(Modifier.height(12.dp))
 
@@ -209,7 +206,7 @@ class AlarmActivity : ComponentActivity() {
                                 ?.takeIf {
                                     it.isNotBlank()
                                 }
-                                ?: "Time to rise",
+                                ?: greetingForHour(),
                         style = MaterialTheme.typography.headlineLarge,
                         color = Ink
                     )
@@ -370,4 +367,13 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+}
+
+internal fun greetingForHour(
+    hour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+): String = when (hour) {
+    in 5..11 -> "Good morning"
+    in 12..16 -> "Good afternoon"
+    in 17..20 -> "Good evening"
+    else -> "Good night"
 }

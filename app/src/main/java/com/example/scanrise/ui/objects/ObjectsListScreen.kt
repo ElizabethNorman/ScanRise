@@ -1,9 +1,11 @@
 package com.example.scanrise.ui.objects
 
-
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,6 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.scanrise.data.ScanObjectEntity
+import com.example.scanrise.ui.theme.Night
+import com.example.scanrise.ui.theme.NightRaised
+import com.example.scanrise.ui.theme.Parchment
+import com.example.scanrise.ui.theme.Slate
+import com.example.scanrise.ui.theme.SoftBrass
 
 @Composable
 fun ObjectsListScreen(
@@ -63,12 +70,16 @@ fun ObjectsListScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .background(Night)
+            .padding(horizontal = 20.dp)
     ) {
+
+        Spacer(Modifier.height(28.dp))
 
         Text(
             text = "Objects",
-            style = MaterialTheme.typography.headlineLarge
+            style = MaterialTheme.typography.headlineLarge,
+            color = Parchment
         )
 
         Spacer(
@@ -84,9 +95,18 @@ fun ObjectsListScreen(
                 contentAlignment = Alignment.Center
             ) {
 
-                Text(
-                    text = "No objects yet"
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "No objects yet",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Parchment
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Add something with a barcode to get started.",
+                        color = Slate
+                    )
+                }
             }
 
         } else {
@@ -103,7 +123,11 @@ fun ObjectsListScreen(
                 ) { scanObject ->
 
                     Card(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = NightRaised),
+                        border = BorderStroke(1.dp, Slate.copy(alpha = 0.35f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
 
                         Row(
@@ -130,13 +154,15 @@ fun ObjectsListScreen(
                                 Text(
                                     text = scanObject.name,
                                     style =
-                                        MaterialTheme.typography.titleMedium
+                                        MaterialTheme.typography.titleMedium,
+                                    color = Parchment
                                 )
 
                                 Text(
                                     text = scanObject.barcodeValue,
                                     style =
-                                        MaterialTheme.typography.bodySmall
+                                        MaterialTheme.typography.bodySmall,
+                                    color = Slate
                                 )
                             }
 
@@ -145,7 +171,7 @@ fun ObjectsListScreen(
                                     objectPendingDeletion = scanObject
                                 }
                             ) {
-                                Text("Delete")
+                                Text("Delete", color = Slate)
                             }
                         }
                     }
@@ -159,9 +185,18 @@ fun ObjectsListScreen(
 
         Button(
             onClick = onAddObject,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = SoftBrass,
+                contentColor = Night
+            )
         ) {
-            Text("+ Add Object")
+            Text("Add object")
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 }

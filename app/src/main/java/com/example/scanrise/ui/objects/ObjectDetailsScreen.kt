@@ -1,7 +1,9 @@
 package com.example.scanrise.ui.objects
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,6 +14,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.example.scanrise.ui.theme.Night
+import com.example.scanrise.ui.theme.NightRaised
+import com.example.scanrise.ui.theme.Parchment
+import com.example.scanrise.ui.theme.Slate
+import com.example.scanrise.ui.theme.SoftBrass
 
 @Composable
 fun ObjectDetailsScreen(
@@ -41,13 +48,15 @@ fun ObjectDetailsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(Night)
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
 
         Text(
             text = "Add Object",
-            style = MaterialTheme.typography.headlineLarge
+            style = MaterialTheme.typography.headlineLarge,
+            color = Parchment
         )
 
         Spacer(
@@ -55,12 +64,15 @@ fun ObjectDetailsScreen(
         )
 
         Text(
-            text = "Barcode"
+            text = "Barcode",
+            style = MaterialTheme.typography.titleMedium,
+            color = Parchment
         )
 
         Text(
             text = barcode,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            color = Slate
         )
 
         Spacer(
@@ -86,7 +98,8 @@ fun ObjectDetailsScreen(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(emojiFocusRequester)
+                .focusRequester(emojiFocusRequester),
+            shape = RoundedCornerShape(16.dp)
         )
 
         Spacer(
@@ -100,7 +113,8 @@ fun ObjectDetailsScreen(
                 Text("Name")
             },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
         )
 
         errorMessage?.let {
@@ -122,7 +136,16 @@ fun ObjectDetailsScreen(
         Button(
             onClick = onSave,
             enabled = canSave,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = SoftBrass,
+                contentColor = Night,
+                disabledContainerColor = NightRaised,
+                disabledContentColor = Slate
+            )
         ) {
             Text("Save Object")
         }
@@ -135,7 +158,7 @@ fun ObjectDetailsScreen(
             onClick = onCancel,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Cancel")
+            Text("Cancel", color = Slate)
         }
     }
 }
