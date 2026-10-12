@@ -47,7 +47,7 @@ object AlarmNotificationFactory {
             )
             .setContentTitle("ScanRise")
             .setContentText(
-                "Scan an object to dismiss"
+                "Scan an object or complete a wake-up challenge"
             )
             .setPriority(
                 NotificationCompat.PRIORITY_MAX

@@ -44,6 +44,7 @@ class AlarmReceiver : BroadcastReceiver() {
             "ALARM RECEIVER FIRED: alarmId=$alarmId"
         )
 
+        WakeChallengeSession.start(context, alarmId)
         createNotificationChannel(context)
 
         val serviceIntent =

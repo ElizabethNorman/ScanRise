@@ -21,6 +21,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -48,6 +50,8 @@ class AlarmActivity : ComponentActivity() {
     mutableStateOf(false)
 
 
+    private var challengeSeed: Long = 0L
+    private var showChallenge by mutableStateOf(false)
     private var alarmId: Long = -1L
 
     private var scannedBarcode by mutableStateOf<String?>(null)
@@ -60,6 +64,8 @@ class AlarmActivity : ComponentActivity() {
                 AlarmScheduler.EXTRA_ALARM_ID,
                 -1L
             )
+
+        challengeSeed = WakeChallengeSession.seed(this, alarmId)
 
         if (alarmId == -1L) {
 
@@ -94,39 +100,25 @@ class AlarmActivity : ComponentActivity() {
         setContent {
             ScanRiseTheme {
 
-            if (loadFailed) {
+            if (showChallenge || loadFailed) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Parchment)
-                        .padding(32.dp),
+                    modifier = Modifier.fillMaxSize().background(Parchment)
+                        .verticalScroll(rememberScrollState()).padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Unable to load alarm",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Ink
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(32.dp)
-                    )
-
-                    Button(
-                        onClick = {
-                            stopAlarm()
-                            finish()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Ink,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("Stop alarm")
+                    if (loadFailed) Text("Unable to load saved objects. Complete your wake-up challenge.")
+                    WakeChallenge(this@AlarmActivity, challengeSeed) {
+                        stopAlarm()
+                        finish()
+                    }
+                    if (!loadFailed) {
+                        Spacer(Modifier.height(24.dp))
+                        OutlinedButton(onClick = { showChallenge = false; openScanner() }) {
+                            Text("Scan my object instead")
+                        }
                     }
                 }
-
                 return@ScanRiseTheme
             }
             if (showScanner) {
@@ -168,6 +160,12 @@ class AlarmActivity : ComponentActivity() {
                         }
                     )
 
+                    OutlinedButton(
+                        onClick = { showScanner = false; showChallenge = true },
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Paper)
+                    ) { Text("Can’t scan? Do a wake-up challenge") }
+
                     Text(
                         text = "Point the camera at your saved object",
                         style = MaterialTheme.typography.titleMedium,
@@ -186,6 +184,7 @@ class AlarmActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Parchment)
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 28.dp, vertical = 36.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -261,7 +260,7 @@ class AlarmActivity : ComponentActivity() {
 
                     scannedBarcode?.let {
                         Text(
-                            text = "Scanned: $it",
+                            text = "That barcode doesn’t match your saved objects. Try again or do a challenge.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Slate
                         )
@@ -296,10 +295,7 @@ class AlarmActivity : ComponentActivity() {
                     )
 
                     OutlinedButton(
-                        onClick = {
-                            stopAlarm()
-                            finish()
-                        },
+                        onClick = { showChallenge = true },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
@@ -310,7 +306,7 @@ class AlarmActivity : ComponentActivity() {
                         )
                     ) {
                         Text(
-                            text = "Stop alarm · testing only",
+                            text = "Can’t scan? Do a wake-up challenge",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -354,6 +350,7 @@ class AlarmActivity : ComponentActivity() {
             )
 
         stopService(serviceIntent)
+        WakeChallengeSession.clear(this, alarmId)
 
         if (alarmId != -1L) {
 
